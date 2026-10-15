@@ -1,0 +1,259 @@
+@host = https://localhost:7055
+
+### Get all gym classes
+GET {{host}}/api/gymclasses
+
+### Get gym class 1 (expect 200)
+GET {{host}}/api/gymclasses/1
+
+### Get gym class 999 (expect 404)
+GET {{host}}/api/gymclasses/999
+
+### Get gym class abc (expect 404)
+GET {{host}}/api/gymclasses/abc
+
+
+### Create a gym class (expect 201)
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{
+  "name": "Evening Spin",
+  "description": "High intensity cycling",
+  "capacity": 15,
+  "instructorId": 1
+}
+
+### Create with a missing instructor (expect 400)
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{
+  "name": "Ghost Class",
+  "capacity": 10,
+  "instructorId": 999
+}
+
+
+### Update class 1 (expect 204)
+PUT {{host}}/api/gymclasses/1
+Content-Type: application/json
+
+{
+  "name": "Morning Yoga Updated",
+  "description": "All levels",
+  "capacity": 25,
+  "instructorId": 1
+}
+
+### Update a class that doesn't exist (expect 404)
+PUT {{host}}/api/gymclasses/999
+Content-Type: application/json
+
+{
+  "name": "Nope",
+  "capacity": 10,
+  "instructorId": 1
+}
+
+### Update with a missing instructor (expect 400)
+PUT {{host}}/api/gymclasses/1
+Content-Type: application/json
+
+{
+  "name": "Bad Instructor",
+  "capacity": 10,
+  "instructorId": 999
+}
+
+
+### Create a throwaway class (note the id in the response, e.g. 2 or 3)
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{
+  "name": "Delete Me",
+  "capacity": 5,
+  "instructorId": 1
+}
+
+### Delete the throwaway class (expect 204; replace 3 with your id)
+DELETE {{host}}/api/gymclasses/3
+
+### Delete it again (expect 404)
+DELETE {{host}}/api/gymclasses/3
+
+### Delete class 1, which has a schedule if you ran my earlier SQL insert (expect 409)
+DELETE {{host}}/api/gymclasses/4
+
+
+### Empty name and bad capacity (expect 400 with two errors)
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{
+  "name": "",
+  "capacity": 0,
+  "instructorId": 1
+}
+
+### Missing fields entirely (expect 400)
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{}
+
+### Create member (expect 201)
+POST {{host}}/api/members
+Content-Type: application/json
+
+{ "firstName": "Omar", "lastName": "Hassan", "email": "omar@mail.com" }
+
+### Duplicate email (expect 409)
+POST {{host}}/api/members
+Content-Type: application/json
+
+{ "firstName": "Other", "lastName": "Person", "email": "omar@mail.com" }
+
+### Invalid email (expect 400)
+POST {{host}}/api/members
+Content-Type: application/json
+
+{ "firstName": "Bad", "lastName": "Email", "email": "not-an-email" }
+
+### Update keeping the same email (expect 204)
+PUT {{host}}/api/members/1
+Content-Type: application/json
+
+{ "firstName": "Omar", "lastName": "Hassan Jr", "email": "omar@mail.com" }
+
+### Duplicate instructor email (expect 409; sara@gym.com was inserted earlier via SQL)
+POST {{host}}/api/instructors
+Content-Type: application/json
+
+{ "firstName": "Other", "lastName": "Person", "email": "sara@gym.com" }
+
+### Delete an instructor who has classes (expect 409)
+DELETE {{host}}/api/instructors/1
+
+
+### Create a schedule (expect 201)
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": 2, "startTime": "2027-01-05T08:00:00Z", "endTime": "2027-01-05T09:00:00Z" }
+
+### End before start (expect 400)
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": 2, "startTime": "2027-01-05T09:00:00Z", "endTime": "2027-01-05T08:00:00Z" }
+
+### In the past (expect 400)
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": 2, "startTime": "2020-01-05T08:00:00Z", "endTime": "2020-01-05T09:00:00Z" }
+
+### Missing EndTime (expect 400)
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": 2, "startTime": "2027-01-05T08:00:00Z" }
+
+### Unknown gym class (expect 400)
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": 999, "startTime": "2027-01-05T08:00:00Z", "endTime": "2027-01-05T09:00:00Z" }
+
+### Get all schedules
+GET {{host}}/api/classschedules
+
+### Get only upcoming schedules
+GET {{host}}/api/classschedules?upcomingOnly=true
+
+
+### Create a class with capacity 1
+# @name cls
+POST {{host}}/api/gymclasses
+Content-Type: application/json
+
+{
+  "name": "Tiny Class",
+  "capacity": 1,
+  "instructorId": 1
+}
+
+### 2. Create a schedule for it
+# @name sched
+POST {{host}}/api/classschedules
+Content-Type: application/json
+
+{ "gymClassId": {{cls.response.body.$.id}}, "startTime": "2027-03-01T08:00:00Z", "endTime": "2027-03-01T09:00:00Z" }
+
+### 3. Member A
+# @name memberA
+POST {{host}}/api/members
+Content-Type: application/json
+
+{ "firstName": "Aya", "lastName": "A", "email": "a-{{$guid}}@mail.com" }
+
+### 4. Member B
+# @name memberB
+POST {{host}}/api/members
+Content-Type: application/json
+
+{ "firstName": "Bilal", "lastName": "B", "email": "b-{{$guid}}@mail.com" }
+
+### 5. A books the only spot (expect 201)
+# @name bookingA
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": {{memberA.response.body.$.id}}, "classScheduleId": {{sched.response.body.$.id}} }
+
+### 6. A books again (expect 409, duplicate)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": {{memberA.response.body.$.id}}, "classScheduleId": {{sched.response.body.$.id}} }
+
+### 7. B tries to book (expect 409, class is full)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": {{memberB.response.body.$.id}}, "classScheduleId": {{sched.response.body.$.id}} }
+
+### 8. Schedule shows 1 booked, 0 available spots
+GET {{host}}/api/classschedules/{{sched.response.body.$.id}}
+
+### 9. A cancels (expect 204)
+DELETE {{host}}/api/bookings/{{bookingA.response.body.$.id}}
+
+### 10. A cancels again (expect 404)
+DELETE {{host}}/api/bookings/{{bookingA.response.body.$.id}}
+
+### 11. B books now (expect 201, the spot is free again)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": {{memberB.response.body.$.id}}, "classScheduleId": {{sched.response.body.$.id}} }
+
+### 12. Unknown member (expect 400)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": 999999, "classScheduleId": {{sched.response.body.$.id}} }
+
+### 13. Unknown schedule (expect 400)
+POST {{host}}/api/bookings
+Content-Type: application/json
+
+{ "memberId": {{memberA.response.body.$.id}}, "classScheduleId": 999999 }
+
+### 14. List all bookings
+GET {{host}}/api/bookings
+
+### 15. One member's bookings
+GET {{host}}/api/bookings?memberId={{memberB.response.body.$.id}}

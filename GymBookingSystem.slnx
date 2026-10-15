@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GymBookingSystem.API/GymBookingSystem.API.csproj" />
+  <Project Path="GymBookingSystem.Application/GymBookingSystem.Application.csproj" />
+  <Project Path="GymBookingSystem.Domain/GymBookingSystem.Domain.csproj" />
+  <Project Path="GymBookingSystem.Infrastructure/GymBookingSystem.Infrastructure.csproj" />
+</Solution>
